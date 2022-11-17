@@ -60,6 +60,7 @@
 #define SI5351_R_DIV_32     (5<<4)
 #define SI5351_R_DIV_64     (6<<4)
 #define SI5351_R_DIV_128    (7<<4)
+#define SI5351_R_DIV(n)     ((n)<<4)
 
 #define SI5351_REG_177_PLL_RESET    177
 #define SI5351_PLL_RESET_B          (1<<7)
@@ -78,6 +79,7 @@ void si5351_enable_output(void);
 void si5351_set_frequency_offset(int32_t offset);
 int  si5351_set_frequency(uint32_t freq, uint8_t drive_strength);
 void si5351_set_power(uint8_t drive_strength);
+void si5351_set_band_mode(uint16_t t);
 
 // Defug use functions
 void si5351_bulk_write(const uint8_t *buf, int len);

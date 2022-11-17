@@ -34,18 +34,14 @@
  * @brief   Enables the PAL subsystem.
  */
 #if !defined(HAL_USE_PAL) || defined(__DOXYGEN__)
-#define HAL_USE_PAL                 TRUE
+#define HAL_USE_PAL                 FALSE
 #endif
 
 /**
  * @brief   Enables the ADC subsystem.
  */
 #if !defined(HAL_USE_ADC) || defined(__DOXYGEN__)
-#if defined(NANOVNA_F303) 
-#define HAL_USE_ADC                 TRUE
-#else
 #define HAL_USE_ADC                 FALSE
-#endif
 #endif
 
 /**
@@ -59,39 +55,35 @@
  * @brief   Enables the DAC subsystem.
  */
 #if !defined(HAL_USE_DAC) || defined(__DOXYGEN__)
-#if defined(NANOVNA_F303)
-#define HAL_USE_DAC                 TRUE 
-#else
 #define HAL_USE_DAC                 FALSE
-#endif
 #endif
 
 /**
  * @brief   Enables the EXT subsystem.
  */
 #if !defined(HAL_USE_EXT) || defined(__DOXYGEN__)
-#define HAL_USE_EXT                 TRUE
+#define HAL_USE_EXT                 FALSE
 #endif
 
 /**
  * @brief   Enables the GPT subsystem.
  */
 #if !defined(HAL_USE_GPT) || defined(__DOXYGEN__)
-#define HAL_USE_GPT                 TRUE
+#define HAL_USE_GPT                 FALSE
 #endif
 
 /**
  * @brief   Enables the I2C subsystem.
  */
 #if !defined(HAL_USE_I2C) || defined(__DOXYGEN__)
-#define HAL_USE_I2C                 TRUE
+#define HAL_USE_I2C                 FALSE
 #endif
 
 /**
  * @brief   Enables the I2S subsystem.
  */
 #if !defined(HAL_USE_I2S) || defined(__DOXYGEN__)
-#define HAL_USE_I2S                 TRUE
+#define HAL_USE_I2S                 FALSE
 #endif
 
 /**
@@ -178,6 +170,7 @@
 #define HAL_USE_WDG                 FALSE
 #endif
 
+//#define STM32_DMA_REQUIRED
 /*===========================================================================*/
 /* ADC driver related settings.                                              */
 /*===========================================================================*/
@@ -187,11 +180,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(ADC_USE_WAIT) || defined(__DOXYGEN__)
-#if defined(NANOVNA_F303)
-#define ADC_USE_WAIT                TRUE
-#else
 #define ADC_USE_WAIT                FALSE
-#endif
 #endif
 
 /**
@@ -309,10 +298,12 @@
  * @note    The default is 64 bytes for both the transmission and receive
  *          buffers.
  */
-#if !defined(SERIAL_BUFFERS_SIZE) || defined(__DOXYGEN__)
-#define SERIAL_BUFFERS_SIZE         64
+#if !defined(SERIAL_RX_BUFFERS_SIZE) || defined(__DOXYGEN__)
+#define SERIAL_RX_BUFFERS_SIZE         64
 #endif
-
+#if !defined(SERIAL_TX_BUFFERS_SIZE) || defined(__DOXYGEN__)
+#define SERIAL_TX_BUFFERS_SIZE         64
+#endif
 /*===========================================================================*/
 /* SERIAL_USB driver related setting.                                        */
 /*===========================================================================*/
@@ -324,16 +315,21 @@
  * @note    The default is 64 bytes for both the transmission and receive
  *          buffers.
  */
-#if !defined(SERIAL_USB_BUFFERS_SIZE) || defined(__DOXYGEN__)
-#define SERIAL_USB_BUFFERS_SIZE     64
+#if !defined(SERIAL_USB_RX_BUFFERS_SIZE) || defined(__DOXYGEN__)
+#define SERIAL_USB_RX_BUFFERS_SIZE     64
 #endif
-
+#if !defined(SERIAL_USB_TX_BUFFERS_SIZE) || defined(__DOXYGEN__)
+#define SERIAL_USB_TX_BUFFERS_SIZE     64
+#endif
 /**
  * @brief   Serial over USB number of buffers.
  * @note    The default is 2 buffers.
  */
-#if !defined(SERIAL_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
-#define SERIAL_USB_BUFFERS_NUMBER   2
+#if !defined(SERIAL_RX_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
+#define SERIAL_USB_RX_BUFFERS_NUMBER   1
+#endif
+#if !defined(SERIAL_TX_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
+#define SERIAL_USB_TX_BUFFERS_NUMBER   2
 #endif
 
 //#define STM32_USB_USE_FAST_COPY   TRUE
