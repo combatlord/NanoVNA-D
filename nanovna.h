@@ -40,11 +40,7 @@
 // Use DAC (in H4 used for brightness used DAC, so need enable __LCD_BRIGHTNESS__ for it)
 //#define __VNA_ENABLE_DAC__
 // Allow enter to DFU from menu or command
-#if defined(NANOVNA_F303)
-//#define __DFU_SOFTWARE_MODE__
-#else
 #define __DFU_SOFTWARE_MODE__
-#endif
 // Add RTC clock support
 #define __USE_RTC__
 // Add RTC backup registers support
@@ -94,7 +90,7 @@
 // Allow dump firmware to SD card
 #define __SD_CARD_DUMP_FIRMWARE__
 // Enable SD card file browser, and allow load files from it
-//#define __SD_FILE_BROWSER__
+#define __SD_FILE_BROWSER__
 #endif
 
 // If measure module enabled, add submodules
@@ -131,7 +127,7 @@
 #define USE_VARIABLE_OFFSET
 
 // Maximum sweep point count (limit by flash and RAM size)
-#define POINTS_COUNT             401
+#define SWEEP_POINTS_MAX         401
 
 #define AUDIO_ADC_FREQ_K1        384
 #else
@@ -152,8 +148,10 @@
 //#define USE_VARIABLE_OFFSET
 
 // Maximum sweep point count (limit by flash and RAM size)
-#define POINTS_COUNT             101
+#define SWEEP_POINTS_MAX         101
 #endif
+// Minimum sweep point count
+#define SWEEP_POINTS_MIN         21
 
 // Dirty hack for H4 ADC speed in version screen (Need for correct work NanoVNA-App)
 #ifndef AUDIO_ADC_FREQ_K1
@@ -164,9 +162,9 @@
  * main.c
  */
 // Minimum frequency set
-#define START_MIN                800
+#define FREQUENCY_MIN            800
 // Maximum frequency set
-#define STOP_MAX                 2700000000U
+#define FREQUENCY_MAX            2700000000U
 // Frequency threshold (max frequency for si5351, harmonic mode after)
 #define FREQUENCY_THRESHOLD      300000100U
 // XTAL frequency on si5351
@@ -251,25 +249,25 @@
 typedef uint32_t freq_t;
 
 // Optional sweep point (in UI menu)
-#if POINTS_COUNT >=401
+#if SWEEP_POINTS_MAX >=401
 #define POINTS_SET_COUNT       5
-#define POINTS_SET             {51, 101, 201, 301, POINTS_COUNT}
-#define POINTS_COUNT_DEFAULT   POINTS_COUNT
-#elif POINTS_COUNT >=301
+#define POINTS_SET             {51, 101, 201, 301, SWEEP_POINTS_MAX}
+#define POINTS_COUNT_DEFAULT   SWEEP_POINTS_MAX
+#elif SWEEP_POINTS_MAX >=301
 #define POINTS_SET_COUNT       4
-#define POINTS_SET             {51, 101, 201, POINTS_COUNT}
-#define POINTS_COUNT_DEFAULT   POINTS_COUNT
-#elif POINTS_COUNT >=201
+#define POINTS_SET             {51, 101, 201, SWEEP_POINTS_MAX}
+#define POINTS_COUNT_DEFAULT   SWEEP_POINTS_MAX
+#elif SWEEP_POINTS_MAX >=201
 #define POINTS_SET_COUNT       3
-#define POINTS_SET             {51, 101, POINTS_COUNT}
-#define POINTS_COUNT_DEFAULT   POINTS_COUNT
-#elif POINTS_COUNT >=101
+#define POINTS_SET             {51, 101, SWEEP_POINTS_MAX}
+#define POINTS_COUNT_DEFAULT   SWEEP_POINTS_MAX
+#elif SWEEP_POINTS_MAX >=101
 #define POINTS_SET_COUNT       2
-#define POINTS_SET             {51, POINTS_COUNT}
-#define POINTS_COUNT_DEFAULT   POINTS_COUNT
+#define POINTS_SET             {51, SWEEP_POINTS_MAX}
+#define POINTS_COUNT_DEFAULT   SWEEP_POINTS_MAX
 #endif
 
-extern float measured[2][POINTS_COUNT][2];
+extern float measured[2][SWEEP_POINTS_MAX][2];
 
 #define CAL_TYPE_COUNT  5
 #define CAL_LOAD        0
@@ -297,9 +295,9 @@ extern float measured[2][POINTS_COUNT][2];
 #define ETERM_ET 3 /* error term transmission tracking */
 #define ETERM_EX 4 /* error term isolation */
 
-#if   POINTS_COUNT <= 256
+#if   SWEEP_POINTS_MAX <= 256
 #define FFT_SIZE   256
-#elif POINTS_COUNT <= 512
+#elif SWEEP_POINTS_MAX <= 512
 #define FFT_SIZE   512
 #endif
 
@@ -308,7 +306,7 @@ void cal_done(void);
 
 #define MAX_FREQ_TYPE 5
 enum stimulus_type {
-  ST_START=0, ST_STOP, ST_CENTER, ST_CW, ST_SPAN, ST_VAR
+  ST_START=0, ST_STOP, ST_CENTER, ST_CW, ST_SPAN, ST_STEP, ST_VAR
 };
 
 freq_t getFrequency(uint16_t idx);
@@ -530,7 +528,7 @@ void tlv320aic3204_write_reg(uint8_t page, uint8_t reg, uint8_t data);
 
 #define FREQUENCIES_XPOS1           OFFSETX
 #define FREQUENCIES_XPOS2           (LCD_WIDTH - 23 * sFONT_WIDTH)
-#define FREQUENCIES_XPOS3           (LCD_WIDTH/2 + OFFSETX - 14 * sFONT_WIDTH / 2)
+#define FREQUENCIES_XPOS3           (LCD_WIDTH/2 + OFFSETX - 16 * sFONT_WIDTH / 2)
 #define FREQUENCIES_YPOS            (AREA_HEIGHT_NORMAL)
 #endif // end 320x240 display plot definitions
 
@@ -733,6 +731,25 @@ extern const uint8_t numfont16x22[];
 #define NUM_FONT_GET_HEIGHT     22
 #define NUM_FONT_GET_DATA(ch)   (&numfont16x22[ch*2*NUM_FONT_GET_HEIGHT])
 
+// Glyph names from numfont16x22.c
+enum {
+  KP_0 = 0, KP_1, KP_2, KP_3, KP_4, KP_5, KP_6, KP_7, KP_8, KP_9,
+  KP_PERIOD,
+  KP_MINUS,
+  KP_BS,
+  KP_k, KP_M, KP_G,
+  KP_m, KP_u, KP_n, KP_p,
+  KP_X1, KP_ENTER, KP_PERCENT, // Enter values
+#if 0
+  KP_INF,
+  KP_DB,
+  KP_PLUSMINUS,
+  KP_KEYPAD,
+  KP_SPACE,
+  KP_PLUS
+#endif
+};
+
 /*
  * LC match text output settings
  */
@@ -845,9 +862,9 @@ enum {LM_MARKER, LM_SEARCH, LM_FREQ_0, LM_FREQ_1, LM_EDELAY};
 #define TRACE_INVALID        -1
 
 // properties flags
-#define DOMAIN_MODE (1<<0)
-#define DOMAIN_FREQ (0<<0)
-#define DOMAIN_TIME (1<<0)
+#define DOMAIN_MODE             (1<<0)
+#define DOMAIN_FREQ             (0<<0)
+#define DOMAIN_TIME             (1<<0)
 // Time domain function
 #define TD_FUNC                 (0b11<<1)
 #define TD_FUNC_BANDPASS        (0b00<<1)
@@ -868,27 +885,35 @@ enum {LM_MARKER, LM_SEARCH, LM_FREQ_0, LM_FREQ_1, LM_EDELAY};
 // Marker delta
 //#define TD_MARKER_LOCK          (1<<9) // reserved
 
-// config._mode flags
-// Auto name for files
-#define VNA_MODE_AUTO_NAME        0
-// Smooth function
-#define VNA_MODE_SMOOTH           1
-// Connection flag
-#define VNA_MODE_CONNECTION       2
-#define VNA_MODE_SERIAL           (1<<VNA_MODE_CONNECTION)
-#define VNA_MODE_USB              (0<<VNA_MODE_CONNECTION)
-// Marker search mode
-#define VNA_MODE_SEARCH           3
-#define VNA_MODE_SEARCH_MIN       (1<<VNA_MODE_SEARCH)
-#define VNA_MODE_SEARCH_MAX       (0<<VNA_MODE_SEARCH)
-// Show grid values
-#define VNA_MODE_SHOW_GRID        4
-// Show grid values
-#define VNA_MODE_DOT_GRID         5
-// Made backup settings (save some settings after power off)
-#define VNA_MODE_BACKUP           6
-// Flip display
-#define VNA_MODE_FLIP_DISPLAY     7
+//
+// config.vna_mode flags (16 bit field)
+//
+enum {
+  VNA_MODE_AUTO_NAME = 0,// Auto name for files
+#ifdef __USE_SMOOTH__
+  VNA_MODE_SMOOTH,       // Smooth function (0: Geom, 1: Arith)
+#endif
+#ifdef __USE_SERIAL_CONSOLE__
+  VNA_MODE_CONNECTION,   // Connection flag (0: USB, 1: SERIAL)
+#endif
+  VNA_MODE_SEARCH,       // Marker search mode (0: max, 1: min)
+  VNA_MODE_SHOW_GRID,    // Show grid values
+  VNA_MODE_DOT_GRID,     // Dotted grid lines
+#ifdef __USE_BACKUP__
+  VNA_MODE_BACKUP,       // Made backup settings (save some settings after power off)
+#endif
+#ifdef __FLIP_DISPLAY__
+  VNA_MODE_FLIP_DISPLAY, // Flip display
+#endif
+#ifdef __DIGIT_SEPARATOR__
+  VNA_MODE_SEPARATOR,    // Comma or dot digit separator (0: dot, 1: comma)
+#endif
+};
+// Update config._vna_mode flags function
+#define VNA_MODE_CLR     0
+#define VNA_MODE_SET     1
+#define VNA_MODE_TOGGLE  2
+void apply_VNA_mode(uint16_t idx, uint16_t value);
 
 #ifdef __VNA_MEASURE_MODULE__
 // Measure option mode
@@ -939,18 +964,18 @@ typedef struct config {
   uint32_t _harmonic_freq_threshold;
   int32_t  _IF_freq;
   int16_t  _touch_cal[4];
-  uint8_t  _vna_mode;
-  uint8_t  _brightness;
+  uint16_t _vna_mode;
   uint16_t _dac_value;
   uint16_t _vbat_offset;
   uint16_t _bandwidth;
+  uint8_t  _lever_mode;
+  uint8_t  _brightness;
   uint16_t _lcd_palette[MAX_PALETTE];
   uint32_t _serial_speed;
   uint32_t _xtal_freq;
   float    _measure_r;
-  uint8_t  _lever_mode;
-  uint8_t  _digit_separator;
   uint8_t  _band_mode;
+  uint8_t  _reserved[3];
   uint32_t checksum;
 } config_t;
 
@@ -979,7 +1004,7 @@ typedef struct properties {
   float    _var_delay;
   float    _s21_offset;
   float    _portz;
-  float    _cal_data[CAL_TYPE_COUNT][POINTS_COUNT][2]; // Put at the end for faster access to others data from struct
+  float    _cal_data[CAL_TYPE_COUNT][SWEEP_POINTS_MAX][2]; // Put at the end for faster access to others data from struct
   uint32_t checksum;
 } properties_t;
 
@@ -1004,7 +1029,7 @@ void set_s21_offset(float offset);
 float groupdelay_from_array(int i, const float *v);
 
 void plot_init(void);
-void update_grid(void);
+void update_grid(freq_t fstart, freq_t fstop);
 void request_to_redraw(uint16_t mask);
 void request_to_draw_cells_behind_menu(void);
 void request_to_draw_cells_behind_numeric_input(void);
@@ -1118,33 +1143,35 @@ typedef uint16_t pixel_t;
 #error "Define LCD pixel format"
 #endif
 
-#define LCD_BG_COLOR             0
-#define LCD_FG_COLOR             1
-#define LCD_GRID_COLOR           2
-#define LCD_MENU_COLOR           3
-#define LCD_MENU_TEXT_COLOR      4
-#define LCD_MENU_ACTIVE_COLOR    5
-#define LCD_TRACE_1_COLOR        6
-#define LCD_TRACE_2_COLOR        7
-#define LCD_TRACE_3_COLOR        8
-#define LCD_TRACE_4_COLOR        9
-#define LCD_TRACE_5_COLOR       10
-#define LCD_TRACE_6_COLOR       11
-#define LCD_NORMAL_BAT_COLOR    12
-#define LCD_LOW_BAT_COLOR       13
-#define LCD_SPEC_INPUT_COLOR    14
-#define LCD_RISE_EDGE_COLOR     15
-#define LCD_FALLEN_EDGE_COLOR   16
-#define LCD_SWEEP_LINE_COLOR    17
-#define LCD_BW_TEXT_COLOR       18
-#define LCD_INPUT_TEXT_COLOR    19
-#define LCD_INPUT_BG_COLOR      20
-#define LCD_LC_MATCH_COLOR      21
-#define LCD_GRID_VALUE_COLOR    22
-#define LCD_INTERP_CAL_COLOR    23
-#define LCD_DISABLE_CAL_COLOR   24
-#define LCD_LINK_COLOR          25
-#define LCD_TXT_SHADOW_COLOR    26
+enum {
+  LCD_BG_COLOR = 0,       // background
+  LCD_FG_COLOR,           // foreground (in most cases text on background)
+  LCD_GRID_COLOR,         // grid lines color
+  LCD_MENU_COLOR,         // UI menu color
+  LCD_MENU_TEXT_COLOR,    // UI menu text color
+  LCD_MENU_ACTIVE_COLOR,  // UI selected menu color
+  LCD_TRACE_1_COLOR,      // Trace 1 color
+  LCD_TRACE_2_COLOR,      // Trace 2 color
+  LCD_TRACE_3_COLOR,      // Trace 3 color
+  LCD_TRACE_4_COLOR,      // Trace 4 color
+  LCD_TRACE_5_COLOR,      // Stored trace A color
+  LCD_TRACE_6_COLOR,      // Stored trace B color
+  LCD_NORMAL_BAT_COLOR,   // Normal battery icon color
+  LCD_LOW_BAT_COLOR,      // Low battery icon color
+  LCD_SPEC_INPUT_COLOR,   // Not used, for future
+  LCD_RISE_EDGE_COLOR,    // UI menu button rise edge color
+  LCD_FALLEN_EDGE_COLOR,  // UI menu button fallen edge color
+  LCD_SWEEP_LINE_COLOR,   // Sweep line color
+  LCD_BW_TEXT_COLOR,      // Bandwidth text color
+  LCD_INPUT_TEXT_COLOR,   // Keyboard Input text color
+  LCD_INPUT_BG_COLOR,     // Keyboard Input text background color
+  LCD_MEASURE_COLOR,      // Measure text color
+  LCD_GRID_VALUE_COLOR,   // Not used, for future
+  LCD_INTERP_CAL_COLOR,   // Calibration state on interpolation color
+  LCD_DISABLE_CAL_COLOR,  // Calibration state on disable color
+  LCD_LINK_COLOR,         // UI menu button text for values color
+  LCD_TXT_SHADOW_COLOR,   // Plot area text border color
+};
 
 #define LCD_DEFAULT_PALETTE {\
 [LCD_BG_COLOR         ] = RGB565(  0,  0,  0), \
@@ -1168,7 +1195,7 @@ typedef uint16_t pixel_t;
 [LCD_BW_TEXT_COLOR    ] = RGB565(196,196,196), \
 [LCD_INPUT_TEXT_COLOR ] = RGB565(  0,  0,  0), \
 [LCD_INPUT_BG_COLOR   ] = RGB565(255,255,255), \
-[LCD_LC_MATCH_COLOR   ] = RGB565(255,255,255), \
+[LCD_MEASURE_COLOR    ] = RGB565(255,255,255), \
 [LCD_GRID_VALUE_COLOR ] = RGB565( 96, 96, 96), \
 [LCD_INTERP_CAL_COLOR ] = RGB565( 31,227,  0), \
 [LCD_DISABLE_CAL_COLOR] = RGB565(255,  0,  0), \
@@ -1211,8 +1238,10 @@ void lcd_bulk_finish(void);                             // wait DMA complete (ne
 
 void lcd_set_foreground(uint16_t fg_idx);
 void lcd_set_background(uint16_t bg_idx);
+void lcd_set_colors(uint16_t fg_idx, uint16_t bg_idx);
 void lcd_clear_screen(void);
 void lcd_blitBitmap(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint8_t *bitmap);
+void lcd_blitBitmapScale(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t size, const uint8_t *b);
 void lcd_drawchar(uint8_t ch, int x, int y);
 #if 0
 void lcd_drawstring(int16_t x, int16_t y, const char *str);
@@ -1253,7 +1282,7 @@ void testLog(void);        // debug log
 /*
  * flash.c
  */
-#define CONFIG_MAGIC 0x434f4e55 // Config magic value (allow reset on new config version)
+#define CONFIG_MAGIC 0x434f4e56 // Config magic value (allow reset on new config version)
 #define PROPS_MAGIC  0x434f4e52 // Properties magic value (allow reset on new properties version)
 
 #define NO_SAVE_SLOT      ((uint16_t)(-1))
@@ -1295,7 +1324,7 @@ extern uint16_t lastsaveid;
 #define lever_mode           config._lever_mode
 #define IF_OFFSET            config._IF_freq
 #ifdef __DIGIT_SEPARATOR__
-#define DIGIT_SEPARATOR      config._digit_separator
+#define DIGIT_SEPARATOR      (VNA_MODE(VNA_MODE_SEPARATOR) ? ',' : '.')
 #else
 #define DIGIT_SEPARATOR      '.'
 #endif
@@ -1338,6 +1367,8 @@ void touch_cal_exec(void);
 void touch_draw_test(void);
 void enter_dfu(void);
 
+void drawMessageBox(const char *header, const char *text, uint32_t delay);
+
 // Irq operation process set
 #define OP_NONE       0x00
 #define OP_LEVER      0x01
@@ -1346,13 +1377,6 @@ void enter_dfu(void);
 extern uint8_t operation_requested;
 
 #define TOUCH_THRESHOLD 2000
-
-// Update config._vna_mode flags
-#define VNA_MODE_CLR     0
-#define VNA_MODE_SET     1
-#define VNA_MODE_TOGGLE  2
-void apply_VNA_mode(uint16_t idx, uint16_t value);
-
 /*
  * misclinous
  */
